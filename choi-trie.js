@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.1',
+            VERSION : '0.2',
             AUTHOR : "jbear"
         };
         this.root = {};
@@ -80,8 +80,10 @@ export var ChoiTrie = (function() {
                             delete current[_key];
 
                             if(prefix.localeCompare(_word)){
-                                current[prefix][_word.substr(prefix_length, _word.length - prefix_length)] = {};
-                                current[prefix][_word.substr(prefix_length, _word.length - prefix_length)].__object$ = _what;
+                                var subword = _word.substr(prefix_length, _word.length - prefix_length);
+                                current[prefix][subword] = {};
+                                current[prefix][subword].__object$ = [];
+                                current[prefix][subword].__object$.push(_what);
                             }else
                                 current[prefix].__object$ = _what;
                             
@@ -120,6 +122,12 @@ export var ChoiTrie = (function() {
                     if(_query_instance_length == 0){
                         found_check = true;
                         console.log(`${prefix}, ${_current.__object$}`);
+                        if(_current.__object$ && _current.__object$.length > 0) {
+                            for(var i = 0; i < _current.__object$.length; i++) {
+                                _queryResult.push(_current.__object$[i]);
+                            }
+                        }
+
                         break;
                     }
                 } else {
@@ -162,32 +170,36 @@ export var ChoiTrie = (function() {
                                     console.log(queue_result);
                                     if(k.localeCompare("__object$")) {
                                         queue_result.push(k);
-                                        if(_current[queue_result[front]][k].__object$)
-                                            _queryResult.push(_current[queue_result[front]][k].__object$);
-                                        
+                                        var obj = _current[queue_result[front]][k].__object$;
+                                        console.log(obj);
+                                        if(obj.length > 0){
+                                            for(var i = 0; i < obj.length; i++) {
+                                                _queryResult.push(obj[i]);
+                                            }
+                                        }
                                         end++;
                                     }
                                 }
 
                                 if(_current[queue_result[front]])
-                                {
                                     _current = _current[queue_result[front]];
-                                    console.log(`${front} , ${end}, ${queue_result[front]}, ${JSON.stringify(_current)}`);
-                                }
                                 
                                 front++;
 
                             } while(front != end);
 
-                            console.log(_queryResult);
-                            return _queryResult;
                         } else {
+                            
                         }
                     }
                 });
             }
+
             
-        }
+            console.log("RESULT");
+            console.log(_queryResult);
+            return _queryResult;
+        } // end of search function
     };
 
     return ChoiTrie;
