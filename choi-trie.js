@@ -16,7 +16,8 @@ export var ChoiTrie = (function() {
         };
 
         var T = this;
-        
+
+        T.CACHING_COUNTING = 3;
         T.BUCKET_START_POINT = 8;
 
         this.node = function(_word, _what){
@@ -28,10 +29,11 @@ export var ChoiTrie = (function() {
                 _I.push(_what);
             }
             return {
-                "C" : "", // first Characters are saved here. (C & O)
+                "C" : "", // Caching(first characeters) are saved here. (C & O)
                 "H" : _H, // Hash bucket (H & I)
                 "O" : [], // generic nOde 
                 "I" : _I, // result of retrIeval
+                "CC" : [], // Caching Counting
                 "length" : _I.length,
                 "select" : function (_word) {
                     if(this.C) {
@@ -48,6 +50,55 @@ export var ChoiTrie = (function() {
                     }
 
                     return -1;
+                },
+                "add_O" : function(_word, _what) {
+                    var c_idx = this.select_c(_word[0]);
+
+                    if(c_idx != -1) {
+                        var co = this.O[c_idx];
+                        var maximum_idx = 0;
+                        var maximum_key = null;
+                        for(var key in co) {
+                            var min_length = (_word.length > key.length) ? key.length : _word.length;
+                            for(var i = 0; i < min_length; i++) {
+                                if(key[i] == _word[i]) {
+                                    if(maximum_key == null || maximum_idx < i) {
+                                        maximum_idx = i;
+                                        maximum_key = key;
+                                    }
+                                }
+                            }
+                        }
+
+                        if(maximum_key) {
+                            var _obj = co[maximum_key];
+                            console.log(`current : ${JSON.stringify(current)}, maximum_key : ${maximum_key}, maximum_idx : ${maximum_idx}, _obj : ${JSON.stringify(_obj)}`);
+                            self.addInternal(_obj, _word.substr(maximum_idx + 1, _word.length), _what);
+                        } else {
+                            console.log("maximum_key가 없는 케이스가 있나?!");
+                        }
+                    } else {
+                        this.C += _word[0];
+                        c_idx = this.O.push({}) - 1;
+                        var co = current.O[c_idx];
+                        co[prefix] = new self.node(_what);
+                    }
+                },
+                "add_C" : function(_char) {
+                    var idx = this.select_c(_char);
+
+                    if(idx != -1){
+                        this.cachintIt(idx);
+                        return idx;
+                    }
+                    else{
+                        this.C += _char;
+                        this.CC.push(0);
+                        return this.CC.length -1;
+                    }
+                },
+                "cachingIt" : function (_idx) {
+                    this.CC[_idx]++;
                 },
                 "select_h" : function(_word) {
                     var idx = 0;
@@ -98,7 +149,7 @@ export var ChoiTrie = (function() {
                             var pop = this.H.substr(h_idx + 1, this.H[h_idx]);
                             var pop_end = this.H.substr(h_idx + parseInt(this.H[h_idx]) + 1, this.H.length);
                             this.H = pop_front + pop_end;
-                            this.I.splice(_idx, 1);
+                            //this.I.splice(_idx, 1);
                             return pop;
                         }
                         if(this.H[h_idx]) {
@@ -161,34 +212,65 @@ export var ChoiTrie = (function() {
             var self = this;
             var current = _root;
 
-            // Hash bucket added
-            if(current.length < self.BUCKET_START_POINT) {
-                current.H += _word.length + _word;
-                current.I.push(_what);
-            } // Character added
+            /* 
+               addInternal Process
+               1) Character Caching check ( Caching Condition : CACHING_COUNTING > 3 )
+               2) if word's cache counting is CACHING_COUNTING, moveH2O
+               3) if word is satisfied with the caching counting, add O
+               4) if word is not satisfied with that condition, add H
+            */
+
+            // 1) Character Caching check
+            var c_idx = this.add_C(_word[0]);
+            // 2) moveH2O
+            if(this.CC[c_idx] == this.CACHING_COUNTING) {
+                current.add_O(_word, _what);
+            } // 3) add O
+            else if( this.CC[c_idx] > this.CACHING_COUNTING) {
+                current.moveH2O(this.C[c_idx]);
+            }
+            // 4) Add Hash Bucket
             else {
+                // prefix check
+                var h_index = 0;
+                while(h_index < current.H.length) {
+                    var word_idx = 0;
+                    var prefix = "";
+                    var h_length = current.H[h_index];
+                    for(; word_idx < _word.length; word_idx++) {
+                        if(_word[word_idx] != current.H[h_index + 1 + word_idx]) {
+                            break;
+                        } else {
+                            prefix += _word[word_idx];
+                        }
+                    }
+                    // C & O added
+                    if(prefix) {
+                        current.add_c(prefix, _what);
+                    } else { // There is no prefix on hash bucket
+                        current.H += _word.length + _word;
+                        current.I.push(_what);
+                    }
+                    h_index += h_length + 1;
+                    console.log(`h_index = ${h_index}, ${current.H.substr(0, h_index)}`);
+                }
+            } // Bucket to Characters
+            else if (current.length == self.BUCKET_START_POINT) {
+                console.log("moveH2O start");
+            }
+            else { //Characters
+                /*
                 var h_idx = 0;
                 while(current.H) {
                     var c_idx = current.select_c(current.H[1]);
                     if(c_idx != -1) {
                         var bucket = current.pop_h(0);
-                        var maximum_idx = 0;
-                        var maximum_key = null;
-                        for(var _key in current.O[c_idx]) {
-                            var min_length = (bucket.length > _key.length) ? _key.length : bucket.length;
-                            for(var i = 0; i < min_length; i++) {
-                                if(_key[i] == bucket[i]) {
-                                    if(maximum_key == null || maximum_idx < i) {
-                                        maximum_idx = i;
-                                        maximum_key = _key;
-                                    }
-                                }
-                            }
-                        }
-                        console.log(`${maximum_key}, ${maximum_idx}`);
                         
-                        current.O[c_idx][maximum_key.substr(0, maximum_idx)] = current.O[c_idx][maximum_key];
-                        delete current.O[c_idx][maximum_key];
+
+                        // add prefix root
+                        self.addInternal(_obj, bucket.substr(maximum_idx + 1, bucket.length), current.I[c_idx]);
+                        // remove what
+                        current.I.splice(c_idx, 1);
                     } else { // new one
                         current.C += current.H[1];
                         current.O.push({});
@@ -198,7 +280,7 @@ export var ChoiTrie = (function() {
                     for(var i = 1; i <= current.H[0]; i++) {
                         
                     }
-                }
+                }*/
             }
 
             current.length++;
