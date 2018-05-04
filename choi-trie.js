@@ -299,15 +299,19 @@ export var ChoiTrie = (function() {
     ChoiTrie.prototype = {
         setRoot: function(_root) {
             var T = this;
-            var node = new T.node();
-            if(_root.constructor !== Array){
-                _root = [];
-            } 
-            node.O = _root;
+            if(Object.keys(_root).length === 0 && _root.constructor === Object) {
+                T.root = Object.assign(_root, new T.node());
+            } else {
+                T.root = _root;
+            }
             
-            
-            T.root = node;
             console.log(`setRoot : T.root = ${JSON.stringify(T.root)}`);
+        },
+        makeRoot: function() {
+            var T = this;
+            var node = new T.node();
+            T.root = node;
+            return T.root;
         },
         add: function(_word, _what) {
             return this.addInternal(this.root, _word, _what);
