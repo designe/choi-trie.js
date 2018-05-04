@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2',
+            VERSION : '0.2.1',
             AUTHOR : "jbear"
         };
 
@@ -20,12 +20,16 @@ export var ChoiTrie = (function() {
         T.CACHING_COUNTING = 3;
         T.BUCKET_START_POINT = 8;
 
-        this.node = function(_word, _what){
+        T.node = function(_word, _what){
             var _H = "";
             var _I = [];
 
             if(_what){
-                _H += _word.length + _word;
+                if(_word.length == 0){
+                    _H += '1;';
+                } else {
+                    _H += _word.length + _word;
+                }
                 _I.push(_what);
             }
             return {
@@ -51,44 +55,11 @@ export var ChoiTrie = (function() {
 
                     return -1;
                 },
-                "add_O" : function(_word, _what) {
-                    var c_idx = this.select_c(_word[0]);
-
-                    if(c_idx != -1) {
-                        var co = this.O[c_idx];
-                        var maximum_idx = 0;
-                        var maximum_key = null;
-                        for(var key in co) {
-                            var min_length = (_word.length > key.length) ? key.length : _word.length;
-                            for(var i = 0; i < min_length; i++) {
-                                if(key[i] == _word[i]) {
-                                    if(maximum_key == null || maximum_idx < i) {
-                                        maximum_idx = i;
-                                        maximum_key = key;
-                                    }
-                                }
-                            }
-                        }
-
-                        if(maximum_key) {
-                            var _obj = co[maximum_key];
-                            console.log(`current : ${JSON.stringify(current)}, maximum_key : ${maximum_key}, maximum_idx : ${maximum_idx}, _obj : ${JSON.stringify(_obj)}`);
-                            self.addInternal(_obj, _word.substr(maximum_idx + 1, _word.length), _what);
-                        } else {
-                            console.log("maximum_key가 없는 케이스가 있나?!");
-                        }
-                    } else {
-                        this.C += _word[0];
-                        c_idx = this.O.push({}) - 1;
-                        var co = current.O[c_idx];
-                        co[prefix] = new self.node(_what);
-                    }
-                },
                 "add_C" : function(_char) {
                     var idx = this.select_c(_char);
 
                     if(idx != -1){
-                        this.cachintIt(idx);
+                        this.cachingIt(idx);
                         return idx;
                     }
                     else{
@@ -97,8 +68,83 @@ export var ChoiTrie = (function() {
                         return this.CC.length -1;
                     }
                 },
+                /* ! 10, @ 10^2, # 10^3 ... */
+                "add_H" : function(_word, _what) {
+                    var word_length = _word.length;
+
+                    this.H += word_length + _word;
+                    this.I[this.H.length - 1] = _what;
+                },
+                "add_O" : function(_word, _what) {
+                    var c_idx = this.select_c(_word[0]);
+                    console.log(`c_idx = ${c_idx}`);
+                    var co = this.O[c_idx];
+                    var maximum_idx = 0;
+                    var maximum_key = null;
+                    for(var key in co) {
+                        console.log(key);
+                        var min_length = (_word.length > key.length) ? key.length : _word.length;
+                        for(var i = 0; i < min_length; i++) {
+                            if(key[i] == _word[i]) {
+                                if(maximum_key == null || maximum_idx < i) {
+                                    maximum_idx = i;
+                                    maximum_key = key;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+
+                    console.log(maximum_idx);
+                    console.log(_word + " " + maximum_key);
+                    
+                    if(maximum_key) {
+                        if(maximum_key.length - 1 == maximum_idx)
+                            return maximum_key;
+                        else {
+                            var prefix = maximum_key.substr(0, maximum_idx+1);
+                            co[maximum_key]
+                            co[prefix] = new T.node();
+                            
+                            delete co[maximum_key];
+                            
+                        }
+                    }else {
+                        if(!co)
+                            co = {};
+                        co[_word] = new T.node("", _what);
+                        console.log(this.O);
+                        return true;
+                    }
+                },
                 "cachingIt" : function (_idx) {
                     this.CC[_idx]++;
+                },
+                "moveH2O" : function(_idx) {
+                    // prefix check
+                    var word_idx = 0;
+                    var h_index = 0;
+                    var _char = this.C[_idx];
+                    var _what = this.I[_idx];
+                    while(h_index < this.H.length) {
+                        var prefix = "";
+
+                        var h_length = this.H[h_index];
+                            
+                        if(this.H[h_index + 1] != _char) {
+                            h_index += h_length + 1;
+                            continue;
+                        } else {
+                            var word = this.pop_h(word_idx);
+                            this.I.splice(word_idx, 1);
+                            this.add_O(word, _what);
+                        }
+                        
+                        h_index += h_length + 1;
+                            
+                        console.log(`h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
+                    }
                 },
                 "select_h" : function(_word) {
                     var idx = 0;
@@ -159,6 +205,9 @@ export var ChoiTrie = (function() {
                     }
                     return -1;
                 },
+                "pushPostfix" : function(_postfix) {
+                    
+                },
                 "removePrefix" : function(_prefix) {
                     if(this.length < this.BUCKET_START_POINT) {
                         var h_idx = 0;
@@ -214,155 +263,40 @@ export var ChoiTrie = (function() {
 
             /* 
                addInternal Process
-               1) Character Caching check ( Caching Condition : CACHING_COUNTING > 3 )
+               1) Character Caching check & Word Length Check ( Caching Condition : CACHING_COUNTING > 3, Length Condition : > 9 )
                2) if word's cache counting is CACHING_COUNTING, moveH2O
                3) if word is satisfied with the caching counting, add O
                4) if word is not satisfied with that condition, add H
             */
 
             // 1) Character Caching check
-            var c_idx = this.add_C(_word[0]);
+            var c_idx = current.add_C(_word[0]);
             // 2) moveH2O
-            if(this.CC[c_idx] == this.CACHING_COUNTING) {
-                current.add_O(_word, _what);
-            } // 3) add O
-            else if( this.CC[c_idx] > this.CACHING_COUNTING) {
-                current.moveH2O(this.C[c_idx]);
+            if(current.CC[c_idx] == self.CACHING_COUNTING) {
+                console.log("2) moveH2O");
+                current.moveH2O(current.C[c_idx]);
+            }
+            // 3) add O
+            if( current.CC[c_idx] >= self.CACHING_COUNTING || _word.length > 9) {
+                console.log("3) add O");
+                var result = current.add_O(_word, _what);
+
+                if(result != true) {
+                    console.log(`result : ${result}, current : ${JSON.stringify(current)}, _obj : ${JSON.stringify(_obj)}`);
+                    var _obj = current.O[c_idx][result];
+                    self.addInternal(_obj, _word.substr(result.length + 1, _word.length), _what);
+                } else {
+                    current.length++;
+                }
             }
             // 4) Add Hash Bucket
             else {
-                // prefix check
-                var h_index = 0;
-                while(h_index < current.H.length) {
-                    var word_idx = 0;
-                    var prefix = "";
-                    var h_length = current.H[h_index];
-                    for(; word_idx < _word.length; word_idx++) {
-                        if(_word[word_idx] != current.H[h_index + 1 + word_idx]) {
-                            break;
-                        } else {
-                            prefix += _word[word_idx];
-                        }
-                    }
-                    // C & O added
-                    if(prefix) {
-                        current.add_c(prefix, _what);
-                    } else { // There is no prefix on hash bucket
-                        current.H += _word.length + _word;
-                        current.I.push(_what);
-                    }
-                    h_index += h_length + 1;
-                    console.log(`h_index = ${h_index}, ${current.H.substr(0, h_index)}`);
-                }
+                console.log("4) add Hash Bucket");
+                current.add_H(_word, _what);
+                current.length++;
             } // Bucket to Characters
-            else if (current.length == self.BUCKET_START_POINT) {
-                console.log("moveH2O start");
-            }
-            else { //Characters
-                /*
-                var h_idx = 0;
-                while(current.H) {
-                    var c_idx = current.select_c(current.H[1]);
-                    if(c_idx != -1) {
-                        var bucket = current.pop_h(0);
-                        
-
-                        // add prefix root
-                        self.addInternal(_obj, bucket.substr(maximum_idx + 1, bucket.length), current.I[c_idx]);
-                        // remove what
-                        current.I.splice(c_idx, 1);
-                    } else { // new one
-                        current.C += current.H[1];
-                        current.O.push({});
-                        current.O[current.O.length - 1][current.pop_h(0)] = new self.node(_what);
-                    }
-                    
-                    for(var i = 1; i <= current.H[0]; i++) {
-                        
-                    }
-                }*/
-            }
-
-            current.length++;
             
         },
-        /*
-        addInternal: function(_root, _word, _what) {
-            var self = this;
-            var current = _root;
-
-            console.log(`log : ${self.root}, ${_word}, ${JSON.stringify(_what)}`);
-            var prefix = null;
-            var prefix_length = 0;
-
-            for(var i = _word.length; i >= 1; i--) {
-                var subword = _word.substr(0, i);
-
-                if(current[subword]) {
-                    prefix = subword;
-                    prefix_length = i;
-                    break;
-                }
-            }
-
-            if(prefix) {
-                //console.log(`1 log : ${prefix}`);
-                if(prefix_length != _word.length)
-                    self.addInternal(current[prefix], _word.substr(prefix_length, _word.length), _what);
-                else
-                    if(current[prefix].__object$)
-                        current[prefix].__object$.push(_what);
-            }
-            else {
-                //console.log(`2 log : ${_word}`);
-                var rootKeys = null;//Object.keys(current);
-                if(current.__object$) {
-                    var current_temp = Object.assign({}, current);
-                    delete current_temp.__object$;
-                    rootKeys = Object.keys(current_temp);
-                } else {
-                    rootKeys = Object.keys(current);
-                }
-
-                var found_check = false;
-                if(rootKeys.length > 0) {
-                    rootKeys.some(function(_key) {
-                        if(_key[0] == _word[0]) {
-                            found_check = true;
-                            
-                            prefix = _key[0];
-                            prefix_length = 1;
-                            for(; prefix_length < _key.length; prefix_length++) {
-                                if(_key[prefix_length] != _word[prefix_length]){
-                                    prefix = _word.substr(0, prefix_length);
-                                    break;
-                                }
-                            }
-
-                            console.log(`${prefix}, ${_key}, ${_word}`);
-                            current[prefix] = {};
-                            current[prefix][_key.substr(prefix_length, _key.length - prefix_length)] = current[_key];
-                            delete current[_key];
-
-                            if(prefix.localeCompare(_word)){
-                                var subword = _word.substr(prefix_length, _word.length - prefix_length);
-                                current[prefix][subword] = {};
-                                current[prefix][subword].__object$ = [];
-                                current[prefix][subword].__object$.push(_what);
-                            }else
-                                current[prefix].__object$ = _what;
-                            
-                        }
-                    });
-                }
-
-                if(!found_check){
-                    current[_word] = {};
-                    current[_word].__object$ = [];
-                    current[_word].__object$.push(_what);
-                }
-            }
-        },*/
         search: function(_query) {
             var self = this;
             var _queryResult = [];
