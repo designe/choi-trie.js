@@ -18,14 +18,16 @@ export var ChoiTrie = (function() {
         var T = this;
 
         T.CACHING_COUNTING = 3;
-        T.BUCKET_START_POINT = 8;
 
         T.node = function(_word, _what){
+            var _C = "";
             var _H = "";
             var _I = [];
 
+            console.log(_what);
             if(_what){
                 if(_word.length == 0){
+                    _C += ';';
                     _H += '1;';
                 } else {
                     _H += _word.length + _word;
@@ -33,7 +35,7 @@ export var ChoiTrie = (function() {
                 _I.push(_what);
             }
             return {
-                "C" : "", // Caching(first characeters) are saved here. (C & O)
+                "C" : _C, // Caching(first characeters) are saved here. (C & O)
                 "H" : _H, // Hash bucket (H & I)
                 "O" : [], // generic nOde 
                 "I" : _I, // result of retrIeval
@@ -73,20 +75,23 @@ export var ChoiTrie = (function() {
                     var word_length = _word.length;
 
                     this.H += word_length + _word;
-                    this.I[this.H.length - 1] = _what;
+                    this.I.push(_what);
                 },
                 "add_O" : function(_word, _what) {
                     var c_idx = this.select_c(_word[0]);
-                    console.log(`c_idx = ${c_idx}`);
+                    console.log(`add_O : c_idx = ${c_idx}, this.O = ${JSON.stringify(this.O)}`);
+                    if(!this.O[c_idx])
+                        this.O[c_idx] = {};
+                    
                     var co = this.O[c_idx];
                     var maximum_idx = 0;
                     var maximum_key = null;
                     for(var key in co) {
-                        console.log(key);
                         var min_length = (_word.length > key.length) ? key.length : _word.length;
                         for(var i = 0; i < min_length; i++) {
+                            console.log(`add_O : _word = ${_word} key = ${key}`);
                             if(key[i] == _word[i]) {
-                                if(maximum_key == null || maximum_idx < i) {
+                                if(maximum_key == null || maximum_idx <= i) {
                                     maximum_idx = i;
                                     maximum_key = key;
                                 }
@@ -96,25 +101,29 @@ export var ChoiTrie = (function() {
                         }
                     }
 
-                    console.log(maximum_idx);
-                    console.log(_word + " " + maximum_key);
+                    console.log(`add_O : _word = ${_word} maximum_idx = ${maximum_idx} maximum_key = ${maximum_key}`);
                     
                     if(maximum_key) {
                         if(maximum_key.length - 1 == maximum_idx)
                             return maximum_key;
                         else {
                             var prefix = maximum_key.substr(0, maximum_idx+1);
-                            co[maximum_key]
-                            co[prefix] = new T.node();
-                            
+                            var postfix = maximum_key.substr(maximum_idx + 1, maximum_key.length - maximum_idx);
+
+                            console.log(`add_O : prefix = ${prefix}, postfix = ${postfix}`);
+                            co[maximum_key].moveAllH2O();
+                            co[maximum_key].pushPostfix(postfix);
+                            co[prefix] = co[maximum_key];
                             delete co[maximum_key];
-                            
+
+                            console.log(`add_O : co[prefix] = ${JSON.stringify(co[prefix])}`);
+
+                            return prefix;
                         }
-                    }else {
-                        if(!co)
-                            co = {};
+                    } else {
+                        console.log(`add_O : PUSHED what = ${_what}`);
                         co[_word] = new T.node("", _what);
-                        console.log(this.O);
+                        console.log(`add_O : co[_word] = ${JSON.stringify(co[_word])}`);
                         return true;
                     }
                 },
@@ -122,7 +131,6 @@ export var ChoiTrie = (function() {
                     this.CC[_idx]++;
                 },
                 "moveH2O" : function(_idx) {
-                    // prefix check
                     var word_idx = 0;
                     var h_index = 0;
                     var _char = this.C[_idx];
@@ -140,10 +148,29 @@ export var ChoiTrie = (function() {
                             this.I.splice(word_idx, 1);
                             this.add_O(word, _what);
                         }
-                        
-                        h_index += h_length + 1;
-                            
+   
                         console.log(`h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
+                    }
+                },
+                "moveAllH2O" : function() {
+                    var h_index = 0;
+                    // move bucket to object.
+                    console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
+                    console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
+                    while(h_index < this.H.length) {                        
+                        if(this.H[h_index + 1]){
+                            var word = this.pop_h(0);
+                            var what = this.I[0];
+                            this.I.splice(0, 1);
+                            this.add_O(word, what);
+                        }
+                    }
+                    console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
+                    console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
+                    //Caching Counting Up Hardly
+                    for(var i = 0 ; i < this.CC.length; i++) {
+                        if(this.CC[i] < this.CACHING_COUNTING)
+                            this.CC[i] += this.CACHING_COUNTING;
                     }
                 },
                 "select_h" : function(_word) {
@@ -206,6 +233,30 @@ export var ChoiTrie = (function() {
                     return -1;
                 },
                 "pushPostfix" : function(_postfix) {
+                    // C O
+                    // Caching
+                    this.C = _postfix[0];
+
+                    // Cache Counting Check
+                    var CC_SUM = 0;
+                    for(var i = 0; i < this.CC.length; i++)
+                        CC_SUM += this.CC[i];
+
+                    this.CC.length = 0; // INIT CC
+                    this.CC.push(CC_SUM);
+
+                    // Object Check
+                    var postfixObject = {};
+                    console.log(`pushPostfix : ${JSON.stringify(this.O)}`);
+                    for(var key in this.O[0]) {
+                        console.log(`pushPostfix : ${key}`);
+                        if(key && key.length == 1 && key[0] == ';')
+                            this.O[0][_postfix] = this.O[0][key];
+                        else
+                            this.O[0][_postfix + key] = this.O[0][key];
+                        delete this.O[0][key];
+                    }
+                    console.log(`pushPostfix : ${JSON.stringify(this.O)}`);
                     
                 },
                 "removePrefix" : function(_prefix) {
@@ -248,11 +299,15 @@ export var ChoiTrie = (function() {
     ChoiTrie.prototype = {
         setRoot: function(_root) {
             var T = this;
+            var node = new T.node();
             if(_root.constructor !== Array){
                 _root = [];
-            }
+            } 
+            node.O = _root;
             
-            T.root.O = _root;
+            
+            T.root = node;
+            console.log(`setRoot : T.root = ${JSON.stringify(T.root)}`);
         },
         add: function(_word, _what) {
             return this.addInternal(this.root, _word, _what);
@@ -274,11 +329,15 @@ export var ChoiTrie = (function() {
             // 2) moveH2O
             if(current.CC[c_idx] == self.CACHING_COUNTING) {
                 console.log("2) moveH2O");
-                current.moveH2O(current.C[c_idx]);
+                current.moveH2O(c_idx);
             }
             // 3) add O
             if( current.CC[c_idx] >= self.CACHING_COUNTING || _word.length > 9) {
-                console.log("3) add O");
+                // Cache Counting Up Hardly
+                if(current.CC[c_idx] < self.CACHING_COUNTING)
+                    current.CC[c_idx] = self.CACHING_COUNTING + 1;
+                
+                console.log(`3) add O word = ${_word}, _what = ${JSON.stringify(_what)}`);
                 var result = current.add_O(_word, _what);
 
                 if(result != true) {
@@ -295,7 +354,9 @@ export var ChoiTrie = (function() {
                 current.add_H(_word, _what);
                 current.length++;
             } // Bucket to Characters
-            
+
+            console.log("----------------ROOT--------------");
+            console.log(self.root);
         },
         search: function(_query) {
             var self = this;
