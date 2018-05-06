@@ -32,7 +32,8 @@ export var ChoiTrie = (function() {
                 } else {
                     _H += _word.length + _word;
                 }
-                _I.push(_what);
+                _I[0] = [];
+                _I[0].push(_what);
             }
             return {
                 "C" : _C, // Caching(first characeters) are saved here. (C & O)
@@ -41,6 +42,7 @@ export var ChoiTrie = (function() {
                 "I" : _I, // result of retrIeval
                 "CC" : [], // Caching Counting
                 "length" : _I.length,
+                "length_h" : 0,
                 "select" : function (_word) {
                     if(this.C) {
                         return this.select_c(_word) * -1;
@@ -72,10 +74,21 @@ export var ChoiTrie = (function() {
                 },
                 /* ! 10, @ 10^2, # 10^3 ... */
                 "add_H" : function(_word, _what) {
-                    var word_length = _word.length;
+                    var h_idx = this.select_H(_word);
+                    console.log(`add_H : word = ${_word}, what ${JSON.stringify(_what)}`);
+                    if(h_idx == -1) {
+                        var word_length = _word.length;
+                        this.H += word_length + _word;
+                        h_idx = this.length_h; 
+                        this.length_h++;
+                    }
 
-                    this.H += word_length + _word;
-                    this.I.push(_what);
+                    if(!this.I[h_idx]){
+                        this.I[h_idx] = [];
+                    }
+
+                    console.log(`add_H : h_idx = ${h_idx}, this.H = ${JSON.stringify(this.H)},  this.I = ${JSON.stringify(this.I)}`);
+                    this.I[h_idx].push(_what);
                 },
                 "add_O" : function(_word, _what) {
                     var c_idx = this.select_c(_word[0]);
@@ -173,23 +186,36 @@ export var ChoiTrie = (function() {
                             this.CC[i] += this.CACHING_COUNTING;
                     }
                 },
-                "select_h" : function(_word) {
+                "select_H" : function(_word) {
                     var idx = 0;
                     var bucket_idx = 0;
                     var bucket = this.H;
-                    while(bucket_idx != this.H.length) {
+                    while(bucket_idx != bucket.length) {
                         if(_word.length == bucket[bucket_idx]) {
                             var isFound = true;
-                            for(var i = 0; i < _word.length; i++, bucket_idx++) {
-                                if(_word[i] != bucket[bucket_idx]) {
+                            var bucket_i = bucket_idx + 1;
+                            for(var i = 0; i < _word.length; i++, bucket_i++) {
+                                if(_word[i] != bucket[bucket_i]) {
                                     isFound = false;
-                                    bucket_idx += _word.length - i;
+                                    break;
                                 }
                             }
 
                             if(isFound) return idx;
-                            else idx++;
-                        } else idx++;
+                            else {
+                                bucket_idx += _word.length + 1;
+                                console.log(`bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
+                                idx++;
+                            }
+                        }
+                        else{
+                            bucket_idx += Number.parseInt(bucket[bucket_idx]) + 1;
+                            console.log(`bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
+                            idx++;
+                        }
+
+                        if(idx > 100)
+                            break;
                     }
 
                     return -1;
@@ -328,6 +354,8 @@ export var ChoiTrie = (function() {
                4) if word is not satisfied with that condition, add H
             */
 
+            if(!_word)
+                _word = ";";
             // 1) Character Caching check
             var c_idx = current.add_C(_word[0]);
             // 2) moveH2O
