@@ -347,7 +347,7 @@ export var ChoiTrie = (function() {
             /* 
                addInternal Process
                1) Character Caching check & Word Length Check ( Caching Condition : CACHING_COUNTING > 3, Length Condition : > 9 )
-               2) if word's cache counting is CACHING_COUNTING, moveH2O
+               2) if word's cache counting is same with CACHING_COUNTING, moveH2O
                3) if word is satisfied with the caching counting, add O
                4) if word is not satisfied with that condition, add H
             */
@@ -393,17 +393,18 @@ export var ChoiTrie = (function() {
         },
         search: function(_query) {
             /*
-              Search for CHOI-TRIE
+              Search Process for CHOI-TRIE
               1) find C
               2) Check CC
-              3) find O or H
+              3) if word's cache counting is more than CACHING_COUNTING, find O.
+              4) if word's cache counting is less than CACHING_COUNTING, find H.              
              */
 
             var self = this;
             var _queryResult = [];
 
             var prefix = null;
-            var _current = self.root;
+            var current = self.root;
             var _query_instance = _query;
             var _query_instance_length = _query_instance.length;
 
@@ -413,6 +414,23 @@ export var ChoiTrie = (function() {
             /*
               Exact Prefix Matching implementation
             */
+            var query_idx = 0;
+            // 1) C Check
+
+            var c_idx = current.select_c(_query_instance[0]);
+            // 2) CC Check
+            
+            // 3) Find O
+            if(current.CC[c_idx] >= current.CACHING_COUNTING)
+            {
+                
+            }
+            // 4) Find H
+            else { 
+            }
+            do {
+                
+            } while(query_instance_length != query_idx);
             
             while(_query_instance_length != 0){
                 prefix = _query_instance.substr(0, _query_instance_length);
