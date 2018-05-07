@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.3',
+            VERSION : '0.2.4',
             AUTHOR : "jbear"
         };
 
@@ -376,7 +376,7 @@ export var ChoiTrie = (function() {
                 if(result != true) {
                     console.log(`result : ${result}, current : ${JSON.stringify(current)}, _obj : ${JSON.stringify(_obj)}`);
                     var _obj = current.O[c_idx][result];
-                    self.addInternal(_obj, _word.substr(result.length + 1, _word.length), _what);
+                    self.addInternal(_obj, _word.substr(result.length, _word.length), _what);
                 } else {
                     current.length++;
                 }
