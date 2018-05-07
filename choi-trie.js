@@ -24,12 +24,13 @@ export var ChoiTrie = (function() {
             var _H = "";
             var _O = [];
             var _I = [];
-
+            var _CC = [];
             console.log(_what);
             if(_what){
                 if(_word.length == 0){
                     _C += ';';
                     _H += '1;';
+                    _CC.push(0);
                 } else {
                     _H += _word.length + _word;
                 }
@@ -41,7 +42,7 @@ export var ChoiTrie = (function() {
                 "H" : _H, // Hash bucket (H & I)
                 "O" : _O, // generic nOde 
                 "I" : _I, // result of retrIeval
-                "CC" : [], // Caching Counting
+                "CC" : _CC, // Caching Counting
                 "length" : _I.length,
                 "length_h" : 0,
                 "select" : function (_word) {
@@ -125,7 +126,9 @@ export var ChoiTrie = (function() {
                             var postfix = maximum_key.substr(maximum_idx + 1, maximum_key.length - maximum_idx);
 
                             console.log(`add_O : prefix = ${prefix}, postfix = ${postfix}`);
+                            
                             co[maximum_key].moveAllH2O();
+                            
                             co[maximum_key].pushPostfix(postfix);
                             co[prefix] = co[maximum_key];
                             delete co[maximum_key];
@@ -148,6 +151,7 @@ export var ChoiTrie = (function() {
                     var word_idx = 0;
                     var h_index = 0;
                     var _char = this.C[_idx];
+
                     var _what = this.I[_idx];
                     while(h_index < this.H.length) {
                         var prefix = "";
@@ -165,6 +169,10 @@ export var ChoiTrie = (function() {
    
                         console.log(`h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
                     }
+                    
+                    /* Caching Counting should be changed for H to O */
+                    if(this.CC[_idx] < T.CACHING_COUNTING)
+                        this.CC[_idx] += T.CACHING_COUNTING;
                 },
                 "moveAllH2O" : function() {
                     var h_index = 0;
@@ -182,9 +190,10 @@ export var ChoiTrie = (function() {
                     console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
                     console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
                     //Caching Counting Up Hardly
+                    console.log(`moveAllH2O : this.CC = ${JSON.stringify(this.CC)} T.CACHING_COUNTING = ${T.CACHING_COUNTING}`);
                     for(var i = 0 ; i < this.CC.length; i++) {
-                        if(this.CC[i] < this.CACHING_COUNTING)
-                            this.CC[i] += this.CACHING_COUNTING;
+                        if(this.CC[i] < T.CACHING_COUNTING)
+                            this.CC[i] += T.CACHING_COUNTING;
                     }
                 },
                 "select_H" : function(_word) {
@@ -266,12 +275,15 @@ export var ChoiTrie = (function() {
 
                     // Cache Counting Check
                     var CC_SUM = 0;
+                    console.log(`pushPostfix : ${JSON.stringify(this.CC)}`);
                     for(var i = 0; i < this.CC.length; i++)
                         CC_SUM += this.CC[i];
 
                     this.CC.length = 0; // INIT CC
                     this.CC.push(CC_SUM);
-
+                    console.log(`pushPostfix : ${JSON.stringify(this.CC)}`);
+                    
+                    
                     // Object Check
                     var postfixObject = {};
                     console.log(`pushPostfix : ${JSON.stringify(this.O)}`);
@@ -413,10 +425,12 @@ export var ChoiTrie = (function() {
             */
             var max_co = null;
             var max_co_length = 0;
-            while(current){
+            while(current && current.O){
                 console.log(`search : query_instance : ${query_instance}`);
                 console.log(current);
-
+                max_co = null;
+                max_co_length = 0;
+                
                 // 1) C Check
                 var c_idx = current.select_c(query_instance[0]);
                 if(c_idx == -1) {
@@ -452,9 +466,17 @@ export var ChoiTrie = (function() {
                                 query_instance = ";";
                             }
                             query_idx = 0;
+                            console.log(`search : max_co_length == comp_idx`);
+                            console.log(current);
                             break;
                         }
                     }
+                    /*
+                    if(!max_co) {
+                        console.log("there is no max_co");
+                        break;
+                    }*/
+                    
                 }
                 // 4) Find H
                 else {
@@ -469,7 +491,20 @@ export var ChoiTrie = (function() {
                     break;
                 }
             }
+            console.log("full search start!");
+            console.log(current);
 
+            // Now Full Search!
+
+            if(this.C){
+                for(var c_idx = 0; c_idx < this.C.length; c_idx++) {
+                    if(this.CC[c_idx] < self.CACHING_COUNTING) {
+                        
+                    } else {
+                        
+                    }
+                }
+            }
             /*
             do {
                 
