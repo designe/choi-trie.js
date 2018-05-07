@@ -205,13 +205,13 @@ export var ChoiTrie = (function() {
                             if(isFound) return idx;
                             else {
                                 bucket_idx += _word.length + 1;
-                                console.log(`bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
+                                console.log(`select_H : bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
                                 idx++;
                             }
                         }
                         else{
                             bucket_idx += Number.parseInt(bucket[bucket_idx]) + 1;
-                            console.log(`bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
+                            console.log(`select_H : bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
                             idx++;
                         }
 
@@ -401,33 +401,76 @@ export var ChoiTrie = (function() {
              */
 
             var self = this;
-            var _queryResult = [];
-
-            var prefix = null;
             var current = self.root;
-            var _query_instance = _query;
-            var _query_instance_length = _query_instance.length;
-
+            var queryResult = [];
+            var query_idx = 0;
+            var prefix = null;
             var found_check = false;
-            console.log(_current);
-            
+            var query_instance = _query;
+            var query_instance_length = query_instance.length;
             /*
               Exact Prefix Matching implementation
             */
-            var query_idx = 0;
-            // 1) C Check
+            var max_co = null;
+            var max_co_length = 0;
+            while(current){
+                console.log(`search : query_instance : ${query_instance}`);
+                console.log(current);
 
-            var c_idx = current.select_c(_query_instance[0]);
-            // 2) CC Check
-            
-            // 3) Find O
-            if(current.CC[c_idx] >= current.CACHING_COUNTING)
-            {
-                
+                // 1) C Check
+                var c_idx = current.select_c(query_instance[0]);
+                if(c_idx == -1) {
+                    console.log("There is no search result.");
+                    break;
+                }
+                // 2) CC Check
+                // 3) Find O
+                if(current.CC[c_idx] >= self.CACHING_COUNTING)
+                {
+                    var co = current.O[c_idx];
+                    var co_idx = 0;
+
+                    console.log(co);
+                    for(var key in co) {
+                        var min_length = (key.length > query_instance.length) ? query_instance.length : key.length; 
+                        var comp_idx = 1;
+                        console.log(`search : co = ${JSON.stringify(co)}, min_length = ${min_length}`);
+                        for(; comp_idx < min_length; comp_idx++) {
+                            if(query_instance[comp_idx] == key[comp_idx] && max_co_length < comp_idx) {
+                                max_co = co[key];
+                                max_co_length = comp_idx;
+                                console.log(`search : max_co = ${JSON.stringify(max_co)}, comp_idx = ${comp_idx}`);
+                            } else {
+                                break;
+                            }
+                        }
+
+                        if(max_co_length == comp_idx - 1) {
+                            current = max_co;
+                            query_instance = query_instance.substr(min_length, query_instance.length);
+                            if(query_instance.length == 0) {
+                                query_instance = ";";
+                            }
+                            query_idx = 0;
+                            break;
+                        }
+                    }
+                }
+                // 4) Find H
+                else {
+                    var h_idx = current.select_H(query_instance);
+                    if(h_idx >= 0) {
+                        for(var i = 0; i < current.I[h_idx].length; i++) {
+                            queryResult.push(current.I[h_idx][i]);
+                        }
+                    } else {
+                        console.log("There is no result.");
+                    }
+                    break;
+                }
             }
-            // 4) Find H
-            else { 
-            }
+
+            /*
             do {
                 
             } while(query_instance_length != query_idx);
@@ -456,9 +499,6 @@ export var ChoiTrie = (function() {
                 }
             }
 
-            /*
-              After Prefix Exact Matching, Full Search Operation.
-             */
             var keysArray = Object.keys(_current);
             
             if(found_check) {
@@ -526,12 +566,14 @@ export var ChoiTrie = (function() {
                         
                     }
                 }
-            });*/
+            });
+            */
             
             console.log("RESULT");
-            console.log(_queryResult);
+            console.log(_query);
+            console.log(queryResult);
 
-            return _queryResult;
+            return queryResult;
         } // end of search function
     };
 
