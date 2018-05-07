@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.1',
+            VERSION : '0.2.3',
             AUTHOR : "jbear"
         };
 
@@ -22,6 +22,7 @@ export var ChoiTrie = (function() {
         T.node = function(_word, _what){
             var _C = "";
             var _H = "";
+            var _O = [];
             var _I = [];
 
             console.log(_what);
@@ -38,7 +39,7 @@ export var ChoiTrie = (function() {
             return {
                 "C" : _C, // Caching(first characeters) are saved here. (C & O)
                 "H" : _H, // Hash bucket (H & I)
-                "O" : [], // generic nOde 
+                "O" : _O, // generic nOde 
                 "I" : _I, // result of retrIeval
                 "CC" : [], // Caching Counting
                 "length" : _I.length,
@@ -343,9 +344,6 @@ export var ChoiTrie = (function() {
             return this.addInternal(this.root, _word, _what);
         },
         addInternal: function(_root, _word, _what) {
-            var self = this;
-            var current = _root;
-
             /* 
                addInternal Process
                1) Character Caching check & Word Length Check ( Caching Condition : CACHING_COUNTING > 3, Length Condition : > 9 )
@@ -353,6 +351,9 @@ export var ChoiTrie = (function() {
                3) if word is satisfied with the caching counting, add O
                4) if word is not satisfied with that condition, add H
             */
+
+            var self = this;
+            var current = _root;
 
             if(!_word)
                 _word = ";";
@@ -391,6 +392,13 @@ export var ChoiTrie = (function() {
             console.log(self.root);
         },
         search: function(_query) {
+            /*
+              Search for CHOI-TRIE
+              1) find C
+              2) Check CC
+              3) find O or H
+             */
+
             var self = this;
             var _queryResult = [];
 
