@@ -30,12 +30,21 @@ export var ChoiTrie = (function() {
                 if(_word.length == 0){
                     _C += ';';
                     _H += '1;';
-                    _CC.push(0);
                 } else {
+                    _C += _word[0];
                     _H += _word.length + _word;
                 }
-                _I[0] = [];
-                _I[0].push(_what);
+                _CC.push(0);
+
+                if(_what.constructor === Array) {
+                    _I.push(_what);
+                } else {
+                    _I.push([]);
+                    _I[0].push(_what);
+                }
+                console.log(`_what = ${_what}`);
+                console.log(`_what = ${JSON.stringify(_what)}`);
+
             }
             return {
                 "C" : _C, // Caching(first characeters) are saved here. (C & O)
@@ -70,8 +79,8 @@ export var ChoiTrie = (function() {
                     }
                     else{
                         this.C += _char;
-                        this.CC.push(0);
-                        return this.CC.length -1;
+                        this.CC.push(1);
+                        return this.C.length - 1;
                     }
                 },
                 /* ! 10, @ 10^2, # 10^3 ... */
@@ -116,7 +125,7 @@ export var ChoiTrie = (function() {
                         }
                     }
 
-                    console.log(`add_O : _word = ${_word} maximum_idx = ${maximum_idx} maximum_key = ${maximum_key}`);
+                    console.log(`add_O : _word = ${_word}, _what = ${_what} maximum_idx = ${maximum_idx} maximum_key = ${maximum_key}`);
                     
                     if(maximum_key) {
                         if(maximum_key.length - 1 == maximum_idx)
@@ -150,25 +159,45 @@ export var ChoiTrie = (function() {
                 "moveH2O" : function(_idx) {
                     var word_idx = 0;
                     var h_index = 0;
+                    
                     var _char = this.C[_idx];
-
                     var _what = this.I[_idx];
+
+                    var idx_counting = 0;
+                    for(var i = 0; i < this.CC.length; i++) {
+                        if(this.CC[i] > T.CACHING_COUNTING) {
+                            continue;
+                        } else {
+                            idx_counting++;
+                            if(idx_counting == _idx) {
+                                _char = this.C[i];
+                                _what = this.I[i];
+                            }
+                        }
+                    }
+
+                    console.log(`moveH2O : this.C = ${this.C} this.CC = ${JSON.stringify(this.CC)}`);
+                    console.log(`moveH2O : _idx = ${_idx}, _char = ${_char} this.H = ${this.H}, this.O = ${JSON.stringify(this.O)}`);
                     while(h_index < this.H.length) {
                         var prefix = "";
 
-                        var h_length = this.H[h_index];
+                        var h_length = Number.parseInt(this.H[h_index]);
                             
                         if(this.H[h_index + 1] != _char) {
                             h_index += h_length + 1;
+                            console.log(`moveH2O : h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
+                            word_idx++;
                             continue;
                         } else {
                             var word = this.pop_h(word_idx);
+                            console.log(`moveH2O : word = ${word}`);
                             this.I.splice(word_idx, 1);
                             this.add_O(word, _what);
+                            break;
                         }
-   
-                        console.log(`h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
                     }
+
+                    console.log(`moveH2O : _idx = ${_idx} this.H = ${this.H}, this.O = ${JSON.stringify(this.O)}`);
                     
                     /* Caching Counting should be changed for H to O */
                     if(this.CC[_idx] < T.CACHING_COUNTING)
@@ -179,6 +208,7 @@ export var ChoiTrie = (function() {
                     // move bucket to object.
                     console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
                     console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
+                    console.log(`moveAllH2O : this.I = ${JSON.stringify(this.I)}`);
                     while(h_index < this.H.length) {                        
                         if(this.H[h_index + 1]){
                             var word = this.pop_h(0);
@@ -189,6 +219,7 @@ export var ChoiTrie = (function() {
                     }
                     console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
                     console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
+                    console.log(`moveAllH2O : this.I = ${JSON.stringify(this.I)}`);
                     //Caching Counting Up Hardly
                     console.log(`moveAllH2O : this.CC = ${JSON.stringify(this.CC)} T.CACHING_COUNTING = ${T.CACHING_COUNTING}`);
                     for(var i = 0 ; i < this.CC.length; i++) {
@@ -386,9 +417,10 @@ export var ChoiTrie = (function() {
                 var result = current.add_O(_word, _what);
 
                 if(result != true) {
-                    console.log(`result : ${result}, current : ${JSON.stringify(current)}, _obj : ${JSON.stringify(_obj)}`);
                     var _obj = current.O[c_idx][result];
-                    self.addInternal(_obj, _word.substr(result.length, _word.length), _what);
+                    console.log(`result : ${result}, current : ${JSON.stringify(current)}, _obj : ${JSON.stringify(_obj)}`);
+                    
+                    return self.addInternal(_obj, _word.substr(result.length, _word.length), _what);
                 } else {
                     current.length++;
                 }
