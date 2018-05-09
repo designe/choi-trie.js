@@ -17,7 +17,7 @@ export var ChoiTrie = (function() {
 
         var T = this;
 
-        T.CACHING_COUNTING = 3;
+        T.CACHING_COUNTING = 2;
 
         T.node = function(_word, _what){
             var _C = "";
@@ -34,7 +34,7 @@ export var ChoiTrie = (function() {
                     _C += _word[0];
                     _H += _word.length + _word;
                 }
-                _CC.push(0);
+                _CC.push(1);
 
                 if(_what.constructor === Array) {
                     _I.push(_what);
@@ -86,7 +86,7 @@ export var ChoiTrie = (function() {
                 /* ! 10, @ 10^2, # 10^3 ... */
                 "add_H" : function(_word, _what) {
                     var h_idx = this.select_H(_word);
-                    console.log(`add_H : word = ${_word}, what ${JSON.stringify(_what)}`);
+                    console.log(`add_H : h_idx = ${h_idx} word = ${_word}, what ${JSON.stringify(_what)}`);
                     if(h_idx == -1) {
                         var word_length = _word.length;
                         this.H += word_length + _word;
@@ -125,7 +125,7 @@ export var ChoiTrie = (function() {
                         }
                     }
 
-                    console.log(`add_O : _word = ${_word}, _what = ${_what} maximum_idx = ${maximum_idx} maximum_key = ${maximum_key}`);
+                    console.log(`add_O : _word = ${_word}, _what = ${JSON.stringify(_what)} maximum_idx = ${maximum_idx} maximum_key = ${maximum_key}`);
                     
                     if(maximum_key) {
                         if(maximum_key.length - 1 == maximum_idx)
@@ -176,8 +176,8 @@ export var ChoiTrie = (function() {
                         }
                     }
 
-                    console.log(`moveH2O : this.C = ${this.C} this.CC = ${JSON.stringify(this.CC)}`);
-                    console.log(`moveH2O : _idx = ${_idx}, _char = ${_char} this.H = ${this.H}, this.O = ${JSON.stringify(this.O)}`);
+                    console.log(`moveH2O : this = ${JSON.stringify(this)} this.CC = ${JSON.stringify(this.CC)}`);
+                    console.log(`moveH2O : _idx = ${_idx}, _char = ${_char}, _what = ${JSON.stringify(_what)} this.H = ${this.H}, this.O = ${JSON.stringify(this.O)}`);
                     while(h_index < this.H.length) {
                         var prefix = "";
 
@@ -185,14 +185,15 @@ export var ChoiTrie = (function() {
                             
                         if(this.H[h_index + 1] != _char) {
                             h_index += h_length + 1;
-                            console.log(`moveH2O : h_index = ${h_index}, ${this.H.substr(0, h_index)}`);
+                            console.log(`moveH2O : h_index = ${h_index}, ${this.H.substr(0, h_index)} in while`);
                             word_idx++;
                             continue;
                         } else {
                             var word = this.pop_h(word_idx);
-                            console.log(`moveH2O : word = ${word}`);
+                            console.log(`moveH2O : word = ${word} in while`);
                             this.I.splice(word_idx, 1);
                             this.add_O(word, _what);
+                            this.length_h--;
                             break;
                         }
                     }
@@ -200,7 +201,7 @@ export var ChoiTrie = (function() {
                     console.log(`moveH2O : _idx = ${_idx} this.H = ${this.H}, this.O = ${JSON.stringify(this.O)}`);
                     
                     /* Caching Counting should be changed for H to O */
-                    if(this.CC[_idx] < T.CACHING_COUNTING)
+                    if(this.CC[_idx] <= T.CACHING_COUNTING)
                         this.CC[_idx] += T.CACHING_COUNTING;
                 },
                 "moveAllH2O" : function() {
@@ -231,7 +232,7 @@ export var ChoiTrie = (function() {
                     var idx = 0;
                     var bucket_idx = 0;
                     var bucket = this.H;
-                    while(bucket_idx != bucket.length) {
+                    while(bucket_idx < bucket.length) {
                         if(_word.length == bucket[bucket_idx]) {
                             var isFound = true;
                             var bucket_i = bucket_idx + 1;
@@ -242,7 +243,8 @@ export var ChoiTrie = (function() {
                                 }
                             }
 
-                            if(isFound) return idx;
+                            if(isFound)
+                                return idx;
                             else {
                                 bucket_idx += _word.length + 1;
                                 console.log(`select_H : bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
@@ -254,9 +256,6 @@ export var ChoiTrie = (function() {
                             console.log(`select_H : bucket = ${bucket}, bucket_idx = ${bucket_idx}`);
                             idx++;
                         }
-
-                        if(idx > 100)
-                            break;
                     }
 
                     return -1;
@@ -376,6 +375,7 @@ export var ChoiTrie = (function() {
             }
             
             console.log(`setRoot : T.root = ${JSON.stringify(T.root)}`);
+            console.log(T.root);
         },
         makeRoot: function() {
             var T = this;
@@ -394,14 +394,20 @@ export var ChoiTrie = (function() {
                3) if word is satisfied with the caching counting, add O
                4) if word is not satisfied with that condition, add H
             */
-
+            console.log(`addInternal : function start : _word = ${_word}`);
             var self = this;
             var current = _root;
 
-            if(!_word)
-                _word = ";";
             // 1) Character Caching check
-            var c_idx = current.add_C(_word[0]);
+            var c_idx = -1;
+            if(!_word) {
+                _word = ";";
+                c_idx = current.select_c(';');
+                if(c_idx == -1)
+                    current.C += _word;
+            } else {
+                c_idx = current.add_C(_word[0]);
+            }
             // 2) moveH2O
             if(current.CC[c_idx] == self.CACHING_COUNTING) {
                 console.log("2) moveH2O");
