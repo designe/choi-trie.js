@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.4',
+            VERSION : '0.2.5',
             AUTHOR : "jbear"
         };
 
@@ -168,10 +168,9 @@ export var ChoiTrie = (function() {
                         if(this.CC[i] > T.CACHING_COUNTING) {
                             continue;
                         } else {
-                            idx_counting++;
+                            _what = this.I[idx_counting++];
                             if(idx_counting == _idx) {
                                 _char = this.C[i];
-                                _what = this.I[i];
                             }
                         }
                     }
@@ -305,27 +304,30 @@ export var ChoiTrie = (function() {
 
                     // Cache Counting Check
                     var CC_SUM = 0;
-                    console.log(`pushPostfix : ${JSON.stringify(this.CC)}`);
+                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
                     for(var i = 0; i < this.CC.length; i++)
                         CC_SUM += this.CC[i];
 
                     this.CC.length = 0; // INIT CC
                     this.CC.push(CC_SUM);
-                    console.log(`pushPostfix : ${JSON.stringify(this.CC)}`);
+                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
                     
                     
                     // Object Check
                     var postfixObject = {};
-                    console.log(`pushPostfix : ${JSON.stringify(this.O)}`);
-                    for(var key in this.O[0]) {
-                        console.log(`pushPostfix : ${key}`);
-                        if(key && key.length == 1 && key[0] == ';')
-                            this.O[0][_postfix] = this.O[0][key];
-                        else
-                            this.O[0][_postfix + key] = this.O[0][key];
-                        delete this.O[0][key];
+                    console.log(`pushPostfix : this.O = ${JSON.stringify(this.O)}`);
+                    for(var i = 0; i < this.O.length; i++) {
+                        for(var key in this.O[i]) {
+                            console.log(`pushPostfix : key = ${key}`);
+                            if(key && key.length == 1 && key[0] == ';')
+                                this.O[i][_postfix] = this.O[i][key];
+                            else {
+                                this.O[i][_postfix + key] = this.O[i][key];
+                            }
+                            delete this.O[i][key];
+                        }
                     }
-                    console.log(`pushPostfix : ${JSON.stringify(this.O)}`);
+                    console.log(`pushPostfix : this.O = ${JSON.stringify(this.O)}`);
                     
                 },
                 "removePrefix" : function(_prefix) {
@@ -477,6 +479,7 @@ export var ChoiTrie = (function() {
                 }
                 // 2) CC Check
                 // 3) Find O
+
                 if(current.CC[c_idx] >= self.CACHING_COUNTING)
                 {
                     var co = current.O[c_idx];
@@ -486,9 +489,10 @@ export var ChoiTrie = (function() {
                     for(var key in co) {
                         var min_length = (key.length > query_instance.length) ? query_instance.length : key.length; 
                         var comp_idx = 1;
+                        var key_idx = 0;
                         console.log(`search : co = ${JSON.stringify(co)}, min_length = ${min_length}`);
-                        for(; comp_idx < min_length; comp_idx++) {
-                            if(query_instance[comp_idx] == key[comp_idx] && max_co_length < comp_idx) {
+                        for(; comp_idx < min_length; comp_idx++, key_idx++) {
+                            if(query_instance[comp_idx] == key[comp_idx] && max_co_length <= comp_idx) {
                                 max_co = co[key];
                                 max_co_length = comp_idx;
                                 console.log(`search : max_co = ${JSON.stringify(max_co)}, comp_idx = ${comp_idx}`);
@@ -497,7 +501,13 @@ export var ChoiTrie = (function() {
                             }
                         }
 
-                        if(max_co_length == comp_idx - 1) {
+                        console.log(`max_co_length = ${max_co_length}, comp_idx = ${comp_idx}`);
+
+                        /*
+                        if(max_co_length == 0) {
+                            break;
+                        }
+                        else*/ if(max_co_length == comp_idx - 1) {
                             current = max_co;
                             query_instance = query_instance.substr(min_length, query_instance.length);
                             if(query_instance.length == 0) {
@@ -533,114 +543,31 @@ export var ChoiTrie = (function() {
             console.log(current);
 
             // Now Full Search!
-
-            if(this.C){
-                for(var c_idx = 0; c_idx < this.C.length; c_idx++) {
-                    if(this.CC[c_idx] < self.CACHING_COUNTING) {
-                        
-                    } else {
-                        
-                    }
+            var fullQueue = [];
+            var fullQueueIdx = 0;
+            fullQueue.push(current);
+            while(fullQueue.length != fullQueueIdx) {
+                current = fullQueue[fullQueueIdx];
+                if(!current)
+                    break;
+                // H pushed
+                if(current.I){
+                    current.I.some(function(_data) {
+                        queryResult.push(_data);
+                    });
                 }
-            }
-            /*
-            do {
-                
-            } while(query_instance_length != query_idx);
-            
-            while(_query_instance_length != 0){
-                prefix = _query_instance.substr(0, _query_instance_length);
-                console.log(`PREFIX MATCHING : ${prefix}, ${_current[prefix]}`);
-                if(_current[prefix]) {
-                    _query_instance = _query_instance.substr(prefix.length, _query_instance.length - prefix.length);
-                    _query_instance_length = _query_instance.length;
 
-                    console.log(`PREFIX MATCHING : ${_query_instance}, ${_query_instance_length}, ${_current.__object$}`);
-                    if(_query_instance_length == 0 &&
-                       _current.__object$ &&
-                       _current.__object$.length > 0)
-                    {
-                        found_check = true;
-                        console.log(`${prefix}, ${_current.__object$}`);
-                        break;
-                    } else {
-                        _current = _current[prefix];
-                        console.log(_current);
-                    }
-                } else {
-                    _query_instance_length--;
-                }
-            }
-
-            var keysArray = Object.keys(_current);
-            
-            if(found_check) {
-                keysArray = [];
-                keysArray.push(prefix);
-            }
-            
-            console.log(`SOME START : query = ${_query}, prefix = ${prefix}, current = ${JSON.stringify(_current)}`);
-
-            var _temp = "";
-            keysArray.some(function(_key) {
-                _temp += _key + " / ";
-            }); // keysArray.some finished
-            console.log(_temp);
-            console.log("SOME END");
-            /*
-            keysArray.some(function(_key) {
-                if(_query[0] == _key[0]) {
-                    found_check = true;
-
-                    var min_length = (_query.length > _key.length) ? _key.length : _query.length;
-                    for(var i = 1; i < min_length; i++) {
-                        if(_query[i] != _key[i])
-                            found_check = false;
-                    }
-
-                    console.log(`${min_length}, ${found_check}`);
-                    // is Exact Prefix Matching ?
-                    if(found_check) {
-                        // full search on prefix
-                        var queue_result = [];
-                        var front = 0;
-                        var end = 1;
-                        queue_result.push(_key);
-                        if(_current[_key].__object$){
-                            for(var i = 0; i < _current[_key].__object$.length; i++) {
-                                _queryResult.push(_current[_key].__object$[i]);
-                            }
+                // O Pushed
+                if(current.C){
+                    for (var c_idx = 0; c_idx < current.C.length; c_idx++) {
+                        if(current.CC[c_idx] >= self.CACHING_COUNTING) {
+                            for(var _key in current.O[c_idx])
+                                fullQueue.push(current.O[c_idx][_key]);
                         }
-                        do {
-                            for(var k in _current[queue_result[front]]) {
-                                console.log("key = " + k);
-                                console.log(queue_result);
-                                if(k.localeCompare("__object$")) {
-                                    queue_result.push(k);
-                                    var obj = _current[queue_result[front]][k].__object$;
-                                    console.log(obj);
-                                    if(obj.length > 0){
-                                        for(var i = 0; i < obj.length; i++) {
-                                            _queryResult.push(obj[i]);
-                                        }
-                                    }
-                                    end++;
-                                }
-                            }
-
-                            if(_current[queue_result[front]])
-                                _current = _current[queue_result[front]];
-                            
-                            front++;
-
-                        } while(front != end);
-
-                    } else {
-                        
                     }
                 }
-            });
-            */
+                fullQueueIdx++;
+            }
             
             console.log("RESULT");
             console.log(_query);
