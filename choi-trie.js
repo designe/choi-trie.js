@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.5',
+            VERSION : '0.2.6',
             AUTHOR : "jbear"
         };
 
@@ -460,55 +460,64 @@ export var ChoiTrie = (function() {
             var found_check = false;
             var query_instance = _query;
             var query_instance_length = query_instance.length;
+
             /*
               Exact Prefix Matching implementation
             */
             var max_co = null;
             var max_co_length = 0;
-            while(current && current.O){
+            var c_idx = null;
+            var current_depth = 0;
+            current.select_c(query_instance[0]);
+
+            // 1) C check
+            while((c_idx = current.select_c(query_instance[0])) != -1){
                 console.log(`search : query_instance : ${query_instance}`);
                 console.log(current);
                 max_co = null;
                 max_co_length = 0;
                 
-                // 1) C Check
-                var c_idx = current.select_c(query_instance[0]);
-                if(c_idx == -1) {
-                    console.log("There is no search result.");
-                    break;
-                }
                 // 2) CC Check
                 // 3) Find O
-
                 if(current.CC[c_idx] >= self.CACHING_COUNTING)
                 {
                     var co = current.O[c_idx];
                     var co_idx = 0;
 
                     console.log(co);
+                    max_co_length = 1;
                     for(var key in co) {
-                        var min_length = (key.length > query_instance.length) ? query_instance.length : key.length; 
+                        var min_length = (key.length > query_instance.length) ? query_instance.length : key.length;
+                        if(min_length == 1) {
+                            max_co = co[key];
+                            break;
+                        }
+                        
                         var comp_idx = 1;
                         var key_idx = 0;
+
                         console.log(`search : co = ${JSON.stringify(co)}, min_length = ${min_length}`);
-                        for(; comp_idx < min_length; comp_idx++, key_idx++) {
-                            if(query_instance[comp_idx] == key[comp_idx] && max_co_length <= comp_idx) {
-                                max_co = co[key];
-                                max_co_length = comp_idx;
+                        for(; comp_idx < min_length; comp_idx++) {
+                            if(query_instance[comp_idx] == key[comp_idx]) {
+                                if(max_co_length < (comp_idx+1)) {
+                                    max_co = co[key];
+                                    max_co_length = comp_idx+1;
+                                }
                                 console.log(`search : max_co = ${JSON.stringify(max_co)}, comp_idx = ${comp_idx}`);
                             } else {
                                 break;
                             }
                         }
+                    }
 
-                        console.log(`max_co_length = ${max_co_length}, comp_idx = ${comp_idx}`);
+                    console.log(`max_co_length = ${max_co_length}, comp_idx = ${comp_idx}`);
 
-                        /*
-                        if(max_co_length == 0) {
-                            break;
-                        }
-                        else*/ if(max_co_length == comp_idx - 1) {
-                            current = max_co;
+                    // Totally same
+                    if(max_co) {
+                        current = max_co;
+                        current_depth++;
+                        
+                        if(max_co_length == min_length) {
                             query_instance = query_instance.substr(min_length, query_instance.length);
                             if(query_instance.length == 0) {
                                 query_instance = ";";
@@ -516,15 +525,8 @@ export var ChoiTrie = (function() {
                             query_idx = 0;
                             console.log(`search : max_co_length == comp_idx`);
                             console.log(current);
-                            break;
                         }
-                    }
-                    /*
-                    if(!max_co) {
-                        console.log("there is no max_co");
-                        break;
-                    }*/
-                    
+                    } else break;
                 }
                 // 4) Find H
                 else {
@@ -539,9 +541,14 @@ export var ChoiTrie = (function() {
                     break;
                 }
             }
+            
             console.log("full search start!");
             console.log(current);
 
+            // if query has already found, finish.
+            if(queryResult.length > 0 || current_depth == 0)
+                return queryResult;
+            
             // Now Full Search!
             var fullQueue = [];
             var fullQueueIdx = 0;
