@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.6',
+            VERSION : '0.2.7',
             AUTHOR : "jbear"
         };
 
@@ -386,7 +386,13 @@ export var ChoiTrie = (function() {
             return T.root;
         },
         add: function(_word, _what) {
-            return this.addInternal(this.root, _word, _what);
+            var self = this;
+            // For split word by ' '
+            var splittedWord = _word.split(/ /g);
+            self.addInternal(self.root, _word, _what);
+            splittedWord.some((__word) => {
+                self.addInternal(self.root, __word, _what);
+            });
         },
         addInternal: function(_root, _word, _what) {
             /* 
