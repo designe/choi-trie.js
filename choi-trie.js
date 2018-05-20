@@ -26,6 +26,7 @@ export var ChoiTrie = (function() {
             var _I = [];
             var _CC = [];
             console.log(_what);
+            
             if(_what){
                 if(_word.length == 0){
                     _C += ';';
@@ -53,7 +54,7 @@ export var ChoiTrie = (function() {
                 "I" : _I, // result of retrIeval
                 "CC" : _CC, // Caching Counting
                 "length" : _I.length,
-                "length_h" : 0,
+                "length_h" : _I.length,
                 "select" : function (_word) {
                     if(this.C) {
                         return this.select_c(_word) * -1;
@@ -135,7 +136,10 @@ export var ChoiTrie = (function() {
                             var postfix = maximum_key.substr(maximum_idx + 1, maximum_key.length - maximum_idx);
 
                             console.log(`add_O : prefix = ${prefix}, postfix = ${postfix}`);
-                            
+
+                            if(co[maximum_key].length_h == 1) {
+                                console.log(`Wondering : ${JSON.stringify(co[maximum_key])}`);
+                            }
                             co[maximum_key].moveAllH2O();
                             
                             co[maximum_key].pushPostfix(postfix);
@@ -192,7 +196,6 @@ export var ChoiTrie = (function() {
                             console.log(`moveH2O : word = ${word} in while`);
                             this.I.splice(word_idx, 1);
                             this.add_O(word, _what);
-                            this.length_h--;
                             break;
                         }
                     }
@@ -217,6 +220,12 @@ export var ChoiTrie = (function() {
                             this.add_O(word, what);
                         }
                     }
+
+                    // H, I initialization.
+                    this.H = "";
+                    this.I = [];
+                    this.length_h = 0;
+                    
                     console.log(`moveAllH2O : this.H = ${JSON.stringify(this.H)}`);
                     console.log(`moveAllH2O : this.O = ${JSON.stringify(this.O)}`);
                     console.log(`moveAllH2O : this.I = ${JSON.stringify(this.I)}`);
@@ -288,6 +297,7 @@ export var ChoiTrie = (function() {
                             var pop_end = this.H.substr(h_idx + parseInt(this.H[h_idx]) + 1, this.H.length);
                             this.H = pop_front + pop_end;
                             //this.I.splice(_idx, 1);
+                            this.length_h--;
                             return pop;
                         }
                         if(this.H[h_idx]) {
@@ -298,20 +308,6 @@ export var ChoiTrie = (function() {
                     return -1;
                 },
                 "pushPostfix" : function(_postfix) {
-                    // C O
-                    // Caching
-                    this.C = _postfix[0];
-
-                    // Cache Counting Check
-                    var CC_SUM = 0;
-                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
-                    for(var i = 0; i < this.CC.length; i++)
-                        CC_SUM += this.CC[i];
-
-                    this.CC.length = 0; // INIT CC
-                    this.CC.push(CC_SUM);
-                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
-                    
                     
                     // Object Check
                     var postfixObject = {};
@@ -328,6 +324,22 @@ export var ChoiTrie = (function() {
                         }
                     }
                     console.log(`pushPostfix : this.O = ${JSON.stringify(this.O)}`);
+                    
+                    // C O
+                    // Caching
+                    this.C = _postfix[0];
+
+                    // Cache Counting Check
+                    var CC_SUM = 0;
+                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
+                    for(var i = 0; i < this.CC.length; i++)
+                        CC_SUM += this.CC[i];
+
+                    this.CC.length = 0; // INIT CC
+                    this.CC.push(CC_SUM);
+                    console.log(`pushPostfix : this.CC = ${JSON.stringify(this.CC)}`);
+                    
+                    
                     
                 },
                 "removePrefix" : function(_prefix) {
@@ -538,9 +550,9 @@ export var ChoiTrie = (function() {
                 else {
                     var h_idx = current.select_H(query_instance);
                     if(h_idx >= 0) {
-                        for(var i = 0; i < current.I[h_idx].length; i++) {
-                            queryResult.push(current.I[h_idx][i]);
-                        }
+                        // for(var i = 0; i < current.I[h_idx].length; i++) {
+                            queryResult.push(current.I[h_idx]);
+                        // }
                     } else {
                         console.log("There is no result.");
                     }
