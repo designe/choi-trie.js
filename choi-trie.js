@@ -137,8 +137,10 @@ export var ChoiTrie = (function() {
 
                             console.log(`add_O : prefix = ${prefix}, postfix = ${postfix}`);
 
-                            if(co[maximum_key].length_h == 1) {
+                            if(co[maximum_key].length_h == co[maximum_key].length) {
                                 console.log(`Wondering : ${JSON.stringify(co[maximum_key])}`);
+                            } else {
+                                console.log(`Wondering : diff : ${JSON.stringify(co[maximum_key])}`);
                             }
                             co[maximum_key].moveAllH2O();
                             
@@ -400,11 +402,19 @@ export var ChoiTrie = (function() {
         add: function(_word, _what) {
             var self = this;
             // For split word by ' '
-            var splittedWord = _word.split(/ /g);
-            self.addInternal(self.root, _word, _what);
-            splittedWord.some((__word) => {
-                self.addInternal(self.root, __word, _what);
-            });
+
+            var pushedWord = _word;
+            var spaceIdx = -1;
+            do {
+                self.addInternal(self.root, pushedWord, _what);
+                spaceIdx = pushedWord.indexOf(' ');
+
+                if(spaceIdx == -1)
+                    break;
+                
+                pushedWord = pushedWord.substr(spaceIdx + 1, _word.length);
+            } while (pushedWord);
+
         },
         addInternal: function(_root, _word, _what) {
             /* 
