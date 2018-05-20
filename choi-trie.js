@@ -139,12 +139,13 @@ export var ChoiTrie = (function() {
 
                             if(co[maximum_key].length_h == co[maximum_key].length) {
                                 console.log(`Wondering : ${JSON.stringify(co[maximum_key])}`);
+                                co[maximum_key].pushPostfixToH(postfix);
                             } else {
                                 console.log(`Wondering : diff : ${JSON.stringify(co[maximum_key])}`);
+                                co[maximum_key].pushPostfix(postfix);
+                                co[maximum_key].moveAllH2O();
                             }
-                            co[maximum_key].moveAllH2O();
                             
-                            co[maximum_key].pushPostfix(postfix);
                             co[prefix] = co[maximum_key];
                             delete co[maximum_key];
 
@@ -309,8 +310,41 @@ export var ChoiTrie = (function() {
                     }
                     return -1;
                 },
+                "pushPostfixToH" : function(_postfix) {
+                    if(this.length_h == this.length) {
+                        var h_idx = 0;
+                        var h_char_idx = 0;
+                        var new_H = "";
+                        while(h_idx < this.length_h) {
+                            var hashLength = parseInt(this.H[h_char_idx]);
+                            h_char_idx++;
+
+                            this.C = this.C.replace(this.H[h_char_idx], _postfix[0]);
+                            if(hashLength == 1) {
+                                if(this.H[h_char_idx] == ';') {
+                                    hashLength = _postfix.length;
+                                    new_H += hashLength + '' + _postfix;
+                                } else {
+                                    hashLength += _postfix.length;
+                                    new_H += hashLength + '' + _postfix + this.H[h_char_idx];
+                                }
+                            } else {
+                                var hash = this.H.substr(h_char_idx, hashLength);
+                                hashLength += _postfix.length;
+                                new_H += hashLength + '' + _postfix + hash;
+                                h_char_idx += hash.length;
+                            }
+                            
+                            h_char_idx++;
+                            h_idx++;
+                        }
+                        console.log(`pushPostfix : this.C = ${this.C} postfix = ${_postfix} this.H = ${this.H}, new_H = ${new_H}`);
+                        this.H = new_H;
+                        
+                    }
+                },
                 "pushPostfix" : function(_postfix) {
-                    
+                  
                     // Object Check
                     var postfixObject = {};
                     console.log(`pushPostfix : this.O = ${JSON.stringify(this.O)}`);
