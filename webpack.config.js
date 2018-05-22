@@ -14,7 +14,7 @@ module.exports = {
         path: __dirname,
         filename: 'choi-trie-0.2.8.min.js'
     },
-    mode: 'development',
+    mode: 'production',
     module: {
         rules: [
             {
