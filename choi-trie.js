@@ -11,7 +11,7 @@
 export var ChoiTrie = (function() {
     function ChoiTrie() {
         var about = {
-            VERSION : '0.2.7',
+            VERSION : '0.2.8',
             AUTHOR : "jbear"
         };
 

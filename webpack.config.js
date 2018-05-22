@@ -12,7 +12,7 @@ module.exports = {
     entry: './choi-trie.js',
     output: {
         path: __dirname,
-        filename: 'choi-trie.min.js'
+        filename: 'choi-trie-0.2.8.min.js'
     },
     mode: 'development',
     module: {
