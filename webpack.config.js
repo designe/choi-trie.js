@@ -7,6 +7,7 @@
  * Copyright @ jbear
  *
 **/
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
     entry: './choi-trie.js',
@@ -14,6 +15,18 @@ module.exports = {
         path: __dirname,
         filename: 'choi-trie-0.2.8.min.js'
     },
+	optimization: {
+		minimizer: [
+			new UglifyJsPlugin({ 
+			cache: true,
+			uglifyOptions: {
+				compress: {
+					drop_console:true
+				}	
+			}	
+			} )
+		]
+	},
     mode: 'production',
     module: {
         rules: [
