@@ -17,6 +17,7 @@ export default () => (
         filename: 'choi-trie-0.2.8.min.js',
 	libraryTarget: 'window',
 	globalObject: 'this',
+	libraryExport: 'default',
 	library: 'ChoiTrie'
     },
 	optimization: {

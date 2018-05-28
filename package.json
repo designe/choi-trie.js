@@ -1,7 +1,7 @@
 {
-  "name": "CHOI-TRIE"
+  "name": "CHOI-TRIE",
   "version": "0.2.8",
-  "description": "Trie for Choi",
+  "description": "TrieForChoi",
   "main": "dist/choi-trie.js",
   "keywords": [
     "trie",
