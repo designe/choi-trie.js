@@ -1,0 +1,27 @@
+{
+  "name": "CHOI-TRIE"
+  "version": "0.2.8",
+  "description": "Trie for Choi",
+  "main": "dist/choi-trie.js",
+  "keywords": [
+    "trie",
+    "choi-trie",
+    "searching-library",
+    "retireval-engine"
+  ],
+  "author": "jbear",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.4",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^3.9.1",
+    "eslint-loader": "^1.6.1",
+    "webpack": "^4.4.1",
+    "webpack-cli": "^2.0.12"
+  },
+  "dependencies": {
+    "package.json": "^2.0.1"
+  }
+}

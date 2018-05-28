@@ -9,18 +9,26 @@
 **/
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
-module.exports = {
-    entry: './choi-trie.js',
+export default () => (
+{
+    entry: './dist/choi-trie.js',
     output: {
         path: __dirname,
-        filename: 'choi-trie-0.2.8.min.js'
+        filename: 'choi-trie-0.2.8.min.js',
+	libraryTarget: 'window',
+	globalObject: 'this',
+	library: 'ChoiTrie'
     },
 	optimization: {
 		minimizer: [
 			new UglifyJsPlugin({ 
 			cache: true,
 			uglifyOptions: {
+				mangle: {
+					keep_fnames:true	
+				},
 				compress: {
+					keep_fnames:true,
 					drop_console:true
 				}	
 			}	
@@ -40,4 +48,5 @@ module.exports = {
             }
         ]
     }
-};
+}
+);
